@@ -1,7 +1,9 @@
-package redis
+package queue
 
 import (
 	"fmt"
+	go_queue "github.com/LTNB/go-queue"
+	"github.com/LTNB/go-queue/redis"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"os"
@@ -14,7 +16,7 @@ var queue *UniversalRedisQueue
 func TestSimpleQueue(t *testing.T) {
 	fmt.Println("TestSimpleQueue running....")
 	dataStr := "data_string"
-	universalRedisQueue := UniversalQueueMessage{Data: []byte(dataStr)}
+	universalRedisQueue := go_queue.UniversalMessageQueue{Data: []byte(dataStr)}
 	queue.Queue(universalRedisQueue)
 	msg, _ := queue.Take()
 	queue.Finish(msg)
@@ -23,7 +25,7 @@ func TestSimpleQueue(t *testing.T) {
 func TestSimpleRequeue(t *testing.T) {
 	fmt.Println("TestSimpleRequeue running....")
 	dataStr := "data_string"
-	universalRedisQueue := UniversalQueueMessage{Data: []byte(dataStr)}
+	universalRedisQueue := go_queue.UniversalMessageQueue{Data: []byte(dataStr)}
 	queue.Queue(universalRedisQueue)
 	message, err := queue.Take()
 	assert.Equal(t, message.NumRequeue, 0, "expected requeue is 0")
@@ -39,7 +41,7 @@ func TestSimpleRequeue(t *testing.T) {
 func TestSimpleFinish(t *testing.T) {
 	fmt.Println("TestFinish running....")
 	dataStr := "data_string"
-	universalRedisQueue := UniversalQueueMessage{Data: []byte(dataStr)}
+	universalRedisQueue := go_queue.UniversalMessageQueue{Data: []byte(dataStr)}
 	queue.Queue(universalRedisQueue)
 	message, err := queue.Take()
 	assert.Equal(t, message.NumRequeue, 0, "expected requeue is 0")
@@ -55,7 +57,7 @@ func TestSimpleFinish(t *testing.T) {
 func TestPerformanceQueue(t *testing.T) {
 	fmt.Println("TestPerformanceQueue running....")
 	for k := 0; k < 100; k++ {
-		message := UniversalQueueMessage{Data: generateRandomBytes(rand.Intn(100))}
+		message := go_queue.UniversalMessageQueue{Data: generateRandomBytes(rand.Intn(100))}
 		queue.Queue(message)
 	}
 	for k := 0; k < 100; k++ {
@@ -69,7 +71,7 @@ func TestPerformanceQueue(t *testing.T) {
 func TestGetOrphanMessages(t *testing.T) {
 	fmt.Println("TestGetOrphanMessages running...")
 	for k := 0; k < 10; k++ {
-		message := UniversalQueueMessage{Data: generateRandomBytes(rand.Intn(10))}
+		message := go_queue.UniversalMessageQueue{Data: generateRandomBytes(rand.Intn(10))}
 		queue.Queue(message)
 	}
 	for k := 0; k < 10; k++ {
@@ -86,7 +88,7 @@ func TestGetOrphanMessages(t *testing.T) {
 func TestQueueSize(t *testing.T) {
 	fmt.Println("TestQueueSize running...")
 	for k := 0; k < 10; k++ {
-		message := UniversalQueueMessage{Data: generateRandomBytes(rand.Intn(10))}
+		message := go_queue.UniversalMessageQueue{Data: generateRandomBytes(rand.Intn(10))}
 		queue.Queue(message)
 	}
 	size := queue.QueueSize()
@@ -100,7 +102,7 @@ func TestQueueSize(t *testing.T) {
 func TestOrphanMessageSize(t *testing.T) {
 	fmt.Println("TestOrphanMessageSize running...")
 	for k := 0; k < 10; k++ {
-		message := UniversalQueueMessage{Data: generateRandomBytes(rand.Intn(10))}
+		message := go_queue.UniversalMessageQueue{Data: generateRandomBytes(rand.Intn(10))}
 		queue.Queue(message)
 	}
 
@@ -122,7 +124,12 @@ func generateRandomBytes(n int) []byte {
 
 func setup() {
 	fmt.Println("run before")
-	queue = &UniversalRedisQueue{Address: "35.247.157.146:16379", Password: "scte1234", Name: "test_queue"}
+	queue = &UniversalRedisQueue{
+		UniversalRedisConfig: redis.UniversalRedisConfig{
+			Address: "localhost:6379", Password: "1234",
+		},
+		Name: "test_queue",
+	}
 	queue.Init()
 }
 

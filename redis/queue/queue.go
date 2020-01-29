@@ -1,8 +1,10 @@
-package redis
+package queue
 
 import (
 	"encoding/json"
 	"fmt"
+	go_queue "github.com/LTNB/go-queue"
+	redis2 "github.com/LTNB/go-queue/redis"
 	"github.com/go-redis/redis"
 	"strconv"
 	"time"
@@ -11,22 +13,12 @@ import (
 var queueInstance *UniversalRedisQueue
 
 type UniversalRedisQueue struct {
-	Address            string
-	Password           string
+	redis2.UniversalRedisConfig
 	Name               string
 	redisHashName      string
 	redisListName      string
 	redisSortedSetName string
-	PoolSize           int
 	client             redis.UniversalClient
-}
-
-type UniversalQueueMessage struct {
-	queueTimestamp time.Time
-	NumRequeue     int
-	ID             int64
-	Data           []byte
-	timestamp      int64
 }
 
 func (queue *UniversalRedisQueue) Init() {
@@ -62,21 +54,21 @@ func (queue *UniversalRedisQueue) Destroy() {
 	queue.client.Del(queue.redisHashName, queue.redisListName, queue.redisSortedSetName)
 }
 
-func (queue *UniversalRedisQueue) GetRedisQueueClient() redis.UniversalClient {
-	return queue.client
+func GetRedisQueue() UniversalRedisQueue {
+	return *queueInstance
 }
 
 /*
  * put id to messenger_email_l
  * put message to messenger_email_h
  */
-func (queue UniversalRedisQueue) Queue(message UniversalQueueMessage) {
+func (queue UniversalRedisQueue) Queue(message go_queue.UniversalMessageQueue) {
 	var now = time.Now()
 	var nowMillis = now.UnixNano() / int64(time.Millisecond)
 	message.ID = nowMillis
 	message.NumRequeue = 0
-	message.queueTimestamp = now
-	message.timestamp = nowMillis
+	message.QueueTimestamp = now
+	message.Timestamp = nowMillis
 	messageStr, _ := json.Marshal(message)
 	field := nowMillis
 	queueScript := redis.NewScript(`
@@ -84,7 +76,7 @@ func (queue UniversalRedisQueue) Queue(message UniversalQueueMessage) {
 		 redis.call("LPUSH", KEYS[2], ARGV[1])
 	`)
 
-	queueScript.Run(queueInstance.client, []string{queueInstance.redisHashName, queueInstance.redisListName},
+	queueScript.Run(queue.client, []string{queue.redisHashName, queue.redisListName},
 		field, string(messageStr)).Result()
 }
 
@@ -93,14 +85,14 @@ func (queue UniversalRedisQueue) Queue(message UniversalQueueMessage) {
  * get message from messenger_email_h
  * push id to messneger_email_s
  */
-func (queue UniversalRedisQueue) Take() (UniversalQueueMessage, error) {
-	var message UniversalQueueMessage
+func (queue UniversalRedisQueue) Take() (go_queue.UniversalMessageQueue, error) {
+	var message  go_queue.UniversalMessageQueue
 	queueScript := redis.NewScript(`
 			local field = redis.call("RPOP", KEYS[1])
 			redis.call("ZADD", KEYS[3], field, field)
 			return redis.call("HGET", KEYS[2], field)
 			`)
-	messageArr, err := queueScript.Run(queueInstance.client, []string{queueInstance.redisListName, queueInstance.redisHashName, queueInstance.redisSortedSetName}).Result()
+	messageArr, err := queueScript.Run(queue.client, []string{queue.redisListName, queue.redisHashName, queue.redisSortedSetName}).Result()
 	if err != nil {
 		return message, err
 	}
@@ -113,10 +105,10 @@ func (queue UniversalRedisQueue) Take() (UniversalQueueMessage, error) {
  * push id to messenger_email_l
  * override message in messager_email_h with numRequeue++, reset time in queue
  */
-func (queue UniversalRedisQueue) Requeue(message UniversalQueueMessage) {
+func (queue UniversalRedisQueue) Requeue(message go_queue.UniversalMessageQueue) {
 	var now = time.Now()
 	message.NumRequeue = message.NumRequeue + 1
-	message.queueTimestamp = now
+	message.QueueTimestamp = now
 	messageStr, _ := json.Marshal(message)
 	field := strconv.FormatInt(message.ID, 10)
 	queueScript := redis.NewScript(`
@@ -124,7 +116,7 @@ func (queue UniversalRedisQueue) Requeue(message UniversalQueueMessage) {
 		redis.call("ZREM", KEYS[2], ARGV[1])
 		redis.call("HSET", KEYS[3], ARGV[1], ARGV[2])
 		`)
-	_, err := queueScript.Run(queueInstance.client, []string{queueInstance.redisListName, queueInstance.redisSortedSetName, queueInstance.redisHashName}, field, messageStr).Result()
+	_, err := queueScript.Run(queue.client, []string{queue.redisListName, queue.redisSortedSetName, queue.redisHashName}, field, messageStr).Result()
 	if err != nil {
 		fmt.Println("err", err)
 	}
@@ -133,10 +125,10 @@ func (queue UniversalRedisQueue) Requeue(message UniversalQueueMessage) {
 /*
  * Get id from messeger_email_s not remove
  */
-func (queue UniversalRedisQueue) GetOrphanMessages(thresholdTimestampMs int64) []UniversalQueueMessage {
-	var result []UniversalQueueMessage
+func (queue UniversalRedisQueue) GetOrphanMessages(thresholdTimestampMs int64) []go_queue.UniversalMessageQueue {
+	var result []go_queue.UniversalMessageQueue
 	max := strconv.FormatInt(time.Now().UnixNano()/int64(time.Millisecond)-thresholdTimestampMs, 10)
-	dataInQueueStr := queueInstance.client.ZRangeByScore(queueInstance.redisSortedSetName, redis.ZRangeBy{
+	dataInQueueStr := queue.client.ZRangeByScore(queue.redisSortedSetName, redis.ZRangeBy{
 		Min:    "0",
 		Max:    max,
 		Offset: 0,
@@ -145,11 +137,11 @@ func (queue UniversalRedisQueue) GetOrphanMessages(thresholdTimestampMs int64) [
 
 	if dataInQueueStr != nil {
 		dataInQueue := dataInQueueStr.Val()
-		result = make([]UniversalQueueMessage, len(dataInQueue))
+		result = make([]go_queue.UniversalMessageQueue, len(dataInQueue))
 		len := len(dataInQueue)
 		for i := 0; i < len; i++ {
-			var message UniversalQueueMessage
-			data, _ := queueInstance.client.HGet(queueInstance.redisHashName, dataInQueue[i]).Bytes()
+			var message go_queue.UniversalMessageQueue
+			data, _ := queue.client.HGet(queue.redisHashName, dataInQueue[i]).Bytes()
 			json.Unmarshal(data, &message)
 			result[i] = message
 		}
@@ -161,13 +153,13 @@ func (queue UniversalRedisQueue) GetOrphanMessages(thresholdTimestampMs int64) [
  * del from hash
  * del from sortedSet
  */
-func (queue UniversalRedisQueue) Finish(message UniversalQueueMessage) {
+func (queue UniversalRedisQueue) Finish(message go_queue.UniversalMessageQueue) {
 	field := strconv.FormatInt(message.ID, 10)
 	queueScript := redis.NewScript(`
 		redis.call("HDEL", KEYS[1], ARGV[1])
 		redis.call("ZREM", KEYS[2], ARGV[1])
 		`)
-	queueScript.Run(queueInstance.client, []string{queueInstance.redisHashName, queueInstance.redisSortedSetName}, field).Result()
+	queueScript.Run(queue.client, []string{queue.redisHashName, queue.redisSortedSetName}, field).Result()
 }
 
 func (queue UniversalRedisQueue) QueueSize() int {
