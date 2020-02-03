@@ -4,8 +4,8 @@
 ## Installation
 Latest release version: `0.1.0`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 ## Usage
-`import github.com/go-redis/redis`
-`import github.com/confluentinc/confluent-kafka-go/kafka`
+- `import github.com/go-redis/redis`
+- `import github.com/confluentinc/confluent-kafka-go/kafka`
 
 ## kafka test
 1. `cd kafka/kafka_2.12-2.4.0`
