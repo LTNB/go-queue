@@ -14,13 +14,13 @@ import (
  * @since
  *
  */
-var l sync.Mutex
 
 type KafkaPubsubService struct {
 	Producer   *kafka.Producer
 	Consumer   *kafka.Consumer
 	subscriber map[string]map[go_queue.ISubscriber]bool
 	isReady    bool
+	l sync.Mutex
 }
 
 func (psService *KafkaPubsubService) Init() {
@@ -37,33 +37,15 @@ func (psService *KafkaPubsubService) Init() {
 					fmt.Println(err)
 					continue
 				}
-				go func() {
-					for sub, _ := range psService.subscriber[*msg.TopicPartition.Topic] {
-						sub.OnMessage(string(msg.Value))
-					}
-				}()
+				for sub, _ := range psService.subscriber[*msg.TopicPartition.Topic] {
+					sub.OnMessage(string(msg.Value))
+				}
 			} else {
 				psService.Consumer.SubscribeTopics(psService.getTopic(), nil)
 				time.Sleep(1 * time.Second)
 			}
 		}
 	}()
-}
-
-func (psService *KafkaPubsubService) Running(topic string) {
-	psService.Consumer.SubscribeTopics(psService.getTopic(), nil) // map from subscriber to string topics
-	for {
-		msg, err := psService.Consumer.ReadMessage(-1)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		go func() {
-			for sub, _ := range psService.subscriber[*msg.TopicPartition.Topic] {
-				sub.OnMessage(string(msg.Value))
-			}
-		}()
-	}
 }
 
 func (psService *KafkaPubsubService) getTopic() []string {
@@ -126,8 +108,8 @@ func (psService KafkaPubsubService) Publish(topic string, message interface{}) (
 
 func (psService *KafkaPubsubService) Subscribe(channel string, subscriber go_queue.ISubscriber) error {
 	psService.isReady = false
-	l.Lock()
-	defer l.Unlock()
+	psService.l.Lock()
+	defer psService.l.Unlock()
 	if psService.subscriber[channel] == nil {
 		psService.subscriber[channel] = make(map[go_queue.ISubscriber]bool)
 	}
@@ -138,8 +120,8 @@ func (psService *KafkaPubsubService) Subscribe(channel string, subscriber go_que
 
 func (psService *KafkaPubsubService) Unsubscribe(channel string, subscriber go_queue.ISubscriber) error {
 	psService.isReady = false
-	l.Lock()
-	defer l.Unlock()
+	psService.l.Lock()
+	defer psService.l.Unlock()
 	delete(psService.subscriber[channel], subscriber)
 	psService.isReady = true
 	return nil

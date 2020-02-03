@@ -4,6 +4,7 @@ import (
 	"fmt"
 	kafka2 "github.com/LTNB/go-queue/kafka"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 	"time"
@@ -21,7 +22,7 @@ func setup() {
 	fmt.Println("run before")
 	configConsumer := &kafka2.UniversalKafkaConsumerConfig{
 		BootstrapServers: "localhost:9092",
-		GroupId:          "myGroup",
+		GroupId:          "testGroup",
 		AutoOffsetReset:  "earliest",
 	}
 
@@ -55,22 +56,10 @@ func (mock SubscriberMock) OnMessage(message interface{}) {
 }
 
 func TestPubsubMessage(t *testing.T) {
-	go func() {
-		for e := range pubsubInstance.Producer.Events() {
-			switch ev := e.(type) {
-			case *kafka.Message:
-				if ev.TopicPartition.Error != nil {
-					fmt.Printf("Delivery failed: %v\n", ev.TopicPartition)
-				} else {
-					fmt.Printf("Delivered message to %v\n", ev.TopicPartition)
-				}
-			}
-		}
-	}()
 
 	// Produce messages to topic (asynchronously)
 	topic := "test"
-	for _, word := range []string{"Welcome", "to", "the", "Confluent", "Kafka", "Golang", "client"} {
+	for _, word := range []string{"message", "from", "test", "topic"} {
 		pubsubInstance.Producer.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 			Value:          []byte(word),
@@ -81,8 +70,9 @@ func TestPubsubMessage(t *testing.T) {
 	pubsubInstance.Producer.Flush(15 * 1000)
 
 
-	pubsubInstance.Subscribe(topic, SubscriberMock{})
-	time.Sleep(10 * time.Minute)
+	err := pubsubInstance.Subscribe(topic, SubscriberMock{})
+	time.Sleep(10 * time.Second)
+	assert.Nil(t, err)
 
 }
 
