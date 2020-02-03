@@ -3,7 +3,6 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
-	go_queue "github.com/LTNB/go-queue"
 	"github.com/LTNB/go-queue/redis"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -22,7 +21,7 @@ func setup() {
 	fmt.Println("run before")
 	pubsubInstace = &RedisPubSubService{
 		UniversalRedisConfig: redis.UniversalRedisConfig{
-			Address: "localost:6379", Password: "12345",
+			Address: "35.247.157.146:16379", Password: "scte1234",
 		},
 		Pattern: "*",
 	}
@@ -61,13 +60,14 @@ type SubscriberPubSubMessageMock struct {
 
 var countUniversalMessage = 0
 
-func (mock SubscriberPubSubMessageMock) OnMessage(message string) {
-	result := go_queue.UniversalPubSubMessage{}
-	countUniversalMessage++
-	if err := json.Unmarshal([]byte(message), &result); err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(result)
+func (mock SubscriberPubSubMessageMock) OnMessage(message interface{}) {
+	fmt.Println(message)
+	//result := go_queue.UniversalPubSubMessage{}
+	//countUniversalMessage++
+	//if err := json.Unmarshal([]byte(message), &result); err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Println(result)
 }
 
 
@@ -84,9 +84,11 @@ func TestGetUniversalPubsubMessage(t *testing.T) {
 	msgDataByte, _ := json.Marshal(msgData)
 	msg := pubsubInstace.CreateMessageWithData(msgDataByte)
 	subscriber := SubscriberPubSubMessageMock{}
+	subscriber1 := SubscriberPubSubMessageMock{}
 	pubsubInstace.Subscribe("localhost", subscriber)
+	pubsubInstace.Subscribe("localhost", subscriber1)
 	pubsubInstace.Publish("localhost", msg)
-	time.Sleep(2 * time.Second)
+	time.Sleep(15 * time.Second)
 	assert.NotNil(t, countUniversalMessage)
 }
 
@@ -95,7 +97,7 @@ type SubscriberCommonsMessageMock struct {
 
 var countCommonsMessage = 0
 
-func (subscriber SubscriberCommonsMessageMock) OnMessage(message string) {
+func (subscriber SubscriberCommonsMessageMock) OnMessage(message interface{}) {
 	countCommonsMessage++
 	fmt.Println(message)
 

@@ -17,7 +17,9 @@ type PubSub interface {
 
 	CreateMessageWithData(data []byte) UniversalPubSubMessage
 
-	Publish(channel string, message UniversalPubSubMessage) (bool, error)
+	PublishUniversal(channel string, message UniversalPubSubMessage) (bool, error)
+
+	Publish(channel string, message interface{}) (bool, error)
 
 	Subscribe(channel string, subscriber ISubscriber) error
 
@@ -26,5 +28,5 @@ type PubSub interface {
 
 //implement for receiving message
 type ISubscriber interface {
-	OnMessage(message string)
+	OnMessage(message interface{})
 }

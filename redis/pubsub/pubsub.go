@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"encoding/json"
+	"fmt"
 	go_queue "github.com/LTNB/go-queue"
 	conf "github.com/LTNB/go-queue/redis"
 	"github.com/go-redis/redis"
@@ -38,9 +39,13 @@ func (psService *RedisPubSubService) Init() {
 		pubSub := psService.client.PSubscribe(psService.Pattern)
 		for {
 			if psService.isReady {
-				msg, _ := pubSub.ReceiveMessage()
+				msg, err := pubSub.ReceiveMessage()
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
 				go func() {
-					for sub, _ := range psService.subscriber[msg.Channel] {
+					for sub := range psService.subscriber[msg.Channel] {
 						sub.OnMessage(msg.Payload)
 					}
 				}()
@@ -77,7 +82,19 @@ func (psService RedisPubSubService) CreateMessageWithData(data []byte) go_queue.
 	}
 }
 
-func (psService RedisPubSubService) Publish(channel string, message go_queue.UniversalPubSubMessage) (bool, error) {
+func (psService RedisPubSubService) PublishUniversal(channel string, message go_queue.UniversalPubSubMessage) (bool, error) {
+	msgJson, err := json.Marshal(message)
+	if err != nil {
+		return false, err
+	}
+	result := psService.client.Publish(channel, msgJson)
+	if result.Val() > 0 {
+		return true, nil
+	}
+	return false, result.Err()
+}
+
+func (psService RedisPubSubService) Publish(channel string, message interface{}) (bool, error) {
 	msgJson, err := json.Marshal(message)
 	if err != nil {
 		return false, err
