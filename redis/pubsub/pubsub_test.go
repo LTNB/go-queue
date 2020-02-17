@@ -21,7 +21,7 @@ func setup() {
 	fmt.Println("run before")
 	pubsubInstace = &RedisPubSubService{
 		UniversalRedisConfig: redis.UniversalRedisConfig{
-			Address: "35.247.157.146:16379", Password: "scte1234",
+			Address: "localhost:6379", Password: "1234",
 		},
 		Pattern: "*",
 	}
