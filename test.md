@@ -78,8 +78,20 @@ Send input phone number and dialing code to login.
     - Path variable:
         - `phone-number`: should use the E.164 format
 - Output:
-    - Success: `{"status": 200, "message": "ok" }`
-    - Error 400: `{"status: 400, "message": "data wrong format"}`
+    - Success: 
+    ```json
+      {
+        "status": 200,
+        "message": "ok"
+        }
+    ```
+    - Error 400: 
+    ```json
+      {
+        "status": 400,
+        "message": "data wrong format"
+      }
+     ```
     
 ** API `GET /verify-code/:{code}`**
 Send input verification code, which is received via phone.
@@ -87,8 +99,21 @@ Send input verification code, which is received via phone.
     - Path variable:
         - `code`: the verification code, consists of 6 numeric characters
 - Output:
-    - Success: `{"status": 200, "message": "ok", "data": "JWT_TOKEN" }`
-    - Error 401: `{"status: 401, "message": "login failed"}`
+    - Success: 
+    ```json
+        {
+          "status": 200,
+          "message": "ok",
+          "data": "JWT_TOKEN" 
+         }
+      ```
+    - Error 401: 
+    ```json
+      {
+        "status": 401,
+        "message": "login failed"
+        }
+      ```
     
     
 ** API `GET /account?token={jwt_token}`
@@ -108,14 +133,14 @@ Get user info by JWT token
     - ERROR 400: 
      ```json
         {
-          "status: 404,
+          "status": 404,
           "message": "resource not found"
         }
       ```
     - ERROR 403: 
     ```json
         {
-          "status: 403,
+          "status": 403,
           "message": "access denied"
         }
     ```
@@ -139,7 +164,7 @@ POST create/update user info
     - ERROR 400: 
      ```json
       {
-        "status: 400,
+        "status": 400,
         "message": "data wrong format"
         }
     ```
