@@ -54,7 +54,7 @@ That means, when call to API: `/example/:id` then the full URL API will be: `htt
 Get dialing code list.
 - Input: none
 - Output:
-    - Success: ```
+    - Success: ```json
       {
         "status": 200,
         "message": "ok",
