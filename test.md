@@ -21,11 +21,11 @@ Core:
 - `address_line`: (varchar) user's address line
 - `postal_code`: (varchar)
 
-**data_country**
+**mt_country**
 - `id`: (varchar) unique id
 - `name`: (varchar) name of country
 
-**dialing_code**
+**mt_dialing_code**
 - `code`: (varchar) unique code
 - `name`: (varchar) abbreviation of the country
 
