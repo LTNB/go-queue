@@ -34,9 +34,9 @@ Core:
 The API response with the following general format:
 ```json
 {
-  "status": (int) result/error-code of API,
-  "message": (string) describes details about the result/error-code,
-  "data": (mixed) data output content (if has)
+  "status": "(int) result/error-code of API",
+  "message": "(string) describes details about the result/error-code",
+  "data": "(mixed) data output content (if has)"
 }
 ```
 The statuses are defined:
