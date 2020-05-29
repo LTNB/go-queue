@@ -97,9 +97,28 @@ Get user info by JWT token
     - params:
         - `jwt_token`: token after login success.
 - Output:
-    - Success: `{"status": 200, "message": "ok", "data": "USER_INFO" }`
-    - ERROR 400: `{"status: 404, "message": "resource not found"}`
-    - ERROR 403: `{"status: 403, "message": "access denied"}`
+    - Success: 
+    ```json
+      {
+        "status": 200,
+        "message": "ok",
+        "data": "USER_INFO"
+      }
+    ```
+    - ERROR 400: 
+     ```json
+        {
+          "status: 404,
+          "message": "resource not found"
+        }
+      ```
+    - ERROR 403: 
+    ```json
+        {
+          "status: 403,
+          "message": "access denied"
+        }
+    ```
     
 ** API `POST /account?token={jwt_token}`
 POST create/update user info
@@ -110,8 +129,20 @@ POST create/update user info
         `{ USER_INFOMATION_CONTENT }`
      
 - Output:
-    - Success: `{"status": 200, "message": "ok" }`
-    - ERROR 400: `{"status: 400, "message": "data wrong format"}`
+    - Success: 
+    ```json
+      {
+      "status": 200,
+      "message": "ok"
+      }
+      ```
+    - ERROR 400: 
+     ```json
+      {
+        "status: 400,
+        "message": "data wrong format"
+        }
+    ```
 
 ## Implementation
 
