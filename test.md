@@ -21,24 +21,24 @@ Core:
 - `address_line`: (varchar) user's address line
 - `postal_code`: (varchar)
 
-**mt_country**
+**data_country**
 - `id`: (varchar) unique id
 - `name`: (varchar) name of country
 
-**mt_dialing_code**
+**dialing_code**
 - `code`: (varchar) unique code
 - `name`: (varchar) abbreviation of the country
 
 ## API design
 `Account Creation` service is provided as RESTful, input/output data is packaged as JSON
 The API response with the following general format:
-```json
+~~~~~~~~```json
 {
   "status": (int) result/error-code of API,
-  "message": (string) describes details about the result/error-code,
+  "message": (string)~~~~ describes details about the result/error-code,
   "data": (mixed) data output content (if has)
 }
-```
+```~~~~~~~~
 The statuses are defined:
 - 200: call API success.
 - 400: input error (ex: parameter is wrong format).
@@ -54,22 +54,10 @@ That means, when call to API: `/example/:id` then the full URL API will be: `htt
 Get dialing code list.
 - Input: none
 - Output:
-    - Success: ```json
-      {
-        "status": 200,
-        "message": "ok",
-        "data": [
-          {
-            "code": "+84",
-            "name": "vn"
-          },
-          {
-            "code": "+1",
-            "name": "us"
-          }
-        ]
-      }
-    ```
+    - Success: 
+        ```json
+        {"status": 200, "message": "ok", "data": [{"code": "+84", "name": "vn"},{"code": "+1", "name": "us"}]}  
+        ```
     
 ** API `GET /phone-number/verify/:{phone-number}`**
 Send input phone number and dialing code to login.
@@ -142,3 +130,8 @@ Core:
 Core:
 - Receive payload and validate require fields.
 - Create new record in `account` table if not existed, or else update old record.
+
+
+        
+        
+        
